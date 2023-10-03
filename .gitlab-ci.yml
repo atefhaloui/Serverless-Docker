@@ -1,7 +1,6 @@
 image: docker:latest
 
 stages:
-  - version
   - deploy
 
 deploy:
@@ -10,35 +9,13 @@ deploy:
     - name: docker:dind
   before_script:
     - export RELEASE=`cat VERSION`
-    - docker build --build-arg RELEASE="$RELEASE" -t stangirard/serverless .
-    - docker tag stangirard/serverless:latest stangirard/serverless:"$RELEASE"
+    - docker build --build-arg RELEASE="$RELEASE" -t atefhaloui/serverless .
+    - docker tag atefhaloui/serverless:latest atefhaloui/serverless:"$RELEASE"
   script:
     - echo "$DOCKER_PASS" | docker login --username "$DOCKER_USER" --password-stdin
-    - docker push stangirard/serverless:latest;
-    - docker push stangirard/serverless:"$RELEASE";
+    - docker push atefhaloui/serverless:latest;
+    - docker push atefhaloui/serverless:"$RELEASE";
   only:
     - tags
   except:
-    - schedules
-
-version:on-schedule:
-  image: stangirard/alpine-powerhouse:latest
-  stage: version
-  before_script:
-    - eval `ssh-agent -s`
-    - echo "${SSH_PRIVATE_KEY}" | tr -d '\r' | ssh-add - > /dev/null # add ssh ke
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - echo "$SSH_PUBLIC_KEY" >> ~/.ssh/id_rsa.pub
-    - '[[ -f /.dockerenv ]] && echo -e "Host *\n\tStrictHostKeyChecking no\n\n" > ~/.ssh/config'
-  script:
-    - git config --global user.email "${CI_EMAIL}"
-    - git config --global user.name "${CI_USERNAME}"
-    - ./bin/version-comparator.sh $REPOSITORY
-    - git remote rm origin && git remote add origin git@gitlab.com:$CI_PROJECT_PATH.git
-    - git push origin HEAD:$CI_COMMIT_REF_NAME # Pushes to the same branch as the trigger
-    - git push origin --tags
-  variables:
-    REPOSITORY: serverless/serverless
-  only:
     - schedules
